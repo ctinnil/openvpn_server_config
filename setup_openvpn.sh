@@ -70,11 +70,15 @@ sed -i "s/proto udp/proto $PROTOCOL/" /etc/openvpn/server.conf
 sed -i "s/dev tun/dev $DEV_TYPE/" /etc/openvpn/server.conf
 sed -i 's/;user nobody/user nobody/' /etc/openvpn/server.conf
 sed -i 's/;group nogroup/group nogroup/' /etc/openvpn/server.conf
-sed -i 's/;client-to-client/client-to-client/' /etc/openvpn/server.conf  # Enable client-to-client communication
+# Ensure client-to-client is commented out
+sed -i 's/^client-to-client/;client-to-client/' /etc/openvpn/server.conf
 
 # Step 6: Adjust Server Networking Configuration
 echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
 sysctl -p
+
+# NAT setup to allow clients to access LAN
+iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
 
 # Start and Enable the OpenVPN Service
 systemctl start openvpn@server
