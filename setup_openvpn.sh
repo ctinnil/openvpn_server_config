@@ -22,16 +22,19 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Step 1: Install UFW and Setup Initial Rules
+# Step 1: Update System Packages
+apt update && apt upgrade -y
+
+# Step 2: Install UFW and Setup Initial Rules
 apt update && apt install ufw -y
 ufw allow OpenSSH
 ufw enable
 ufw allow $PORT/$PROTOCOL
 
-# Step 2: Install OpenVPN and Easy-RSA
+# Step 3: Install OpenVPN and Easy-RSA
 apt install openvpn easy-rsa -y
 
-# Step 3: Set up Easy-RSA
+# Step 4: Set up Easy-RSA
 make-cadir ~/openvpn-ca
 cd ~/openvpn-ca
 ./easyrsa init-pki
@@ -60,7 +63,7 @@ else
     create_clients $CLIENT_COUNT
 fi
 
-# Step 4: Configure the OpenVPN Server
+# Step 5: Configure the OpenVPN Server
 gunzip -c /usr/share/doc/openvpn/examples/sample-config-files/server.conf.gz > /etc/openvpn/server.conf
 sed -i "s/port 1194/port $PORT/" /etc/openvpn/server.conf
 sed -i "s/proto udp/proto $PROTOCOL/" /etc/openvpn/server.conf
@@ -68,7 +71,7 @@ sed -i "s/dev tun/dev $DEV_TYPE/" /etc/openvpn/server.conf
 sed -i 's/;user nobody/user nobody/' /etc/openvpn/server.conf
 sed -i 's/;group nogroup/group nogroup/' /etc/openvpn/server.conf
 
-# Step 5: Adjust Server Networking Configuration
+# Step 6: Adjust Server Networking Configuration
 echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
 sysctl -p
 
