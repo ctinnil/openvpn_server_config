@@ -3,15 +3,15 @@
 # Default values for command line arguments
 PORT=1194
 PROTOCOL=udp
-DEV_TYPE=tun
+DEV_TYPE=tap  # Set default device type to TAP
 
 # Process command line arguments
 while getopts ":p:t:m:client:" opt; do
   case $opt in
-    p) PORT=$OPTARG;;
-    t) PROTOCOL=$OPTARG;;
-    m) DEV_TYPE=$OPTARG;;
-    client) CLIENTS=$OPTARG;;
+    p) PORT=$OPTARG;;      # Customize port
+    t) PROTOCOL=$OPTARG;;  # Customize protocol (UDP or TCP)
+    m) DEV_TYPE=$OPTARG;;  # Customize device type (TUN or TAP)
+    client) CLIENTS=$OPTARG;;  # Specify additional clients
     \?) echo "Invalid option -$OPTARG" >&2; exit 1;;
   esac
 done
@@ -26,7 +26,7 @@ fi
 apt update && apt upgrade -y
 
 # Step 2: Install UFW and Setup Initial Rules
-apt update && apt install ufw -y
+apt install ufw -y
 ufw allow OpenSSH
 ufw enable
 ufw allow $PORT/$PROTOCOL
@@ -70,6 +70,7 @@ sed -i "s/proto udp/proto $PROTOCOL/" /etc/openvpn/server.conf
 sed -i "s/dev tun/dev $DEV_TYPE/" /etc/openvpn/server.conf
 sed -i 's/;user nobody/user nobody/' /etc/openvpn/server.conf
 sed -i 's/;group nogroup/group nogroup/' /etc/openvpn/server.conf
+sed -i 's/;client-to-client/client-to-client/' /etc/openvpn/server.conf  # Enable client-to-client communication
 
 # Step 6: Adjust Server Networking Configuration
 echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
