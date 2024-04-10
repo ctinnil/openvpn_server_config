@@ -15,5 +15,5 @@ chmod +x setup_openvpn.sh
 Then run it:
 
 ```sh
-./setup_openvpn.sh
+sudo ./setup_openvpn.sh
 ```
