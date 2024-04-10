@@ -7,7 +7,7 @@ This is a "one" click OpenVPN server setup
 First, get the script and make it executable:
 
 ```sh
-sudo apt install curl -y
+sudo apt update && sudo apt install curl -y
 curl -O https://raw.githubusercontent.com/ctinnil/openvpn_server_config/main/setup_openvpn.sh
 chmod +x openvpn-install.sh
 ```
