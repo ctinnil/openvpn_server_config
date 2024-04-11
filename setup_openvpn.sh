@@ -31,8 +31,8 @@ ufw allow OpenSSH
 ufw enable
 ufw allow $PORT/$PROTOCOL
 
-# Step 3: Install OpenVPN and Easy-RSA
-apt install openvpn easy-rsa -y
+# Step 3: Install OpenVPN, Easy-RSA, and Zip
+apt install openvpn easy-rsa zip -y
 
 # Step 4: Set up Easy-RSA
 make-cadir ~/openvpn-ca
@@ -44,13 +44,30 @@ cd ~/openvpn-ca
 ./easyrsa gen-req server nopass
 ./easyrsa sign-req server server
 
-# Function to create client certificates
+# Function to create client certificates and configuration files
 create_clients() {
     local existing_count=$(ls pki/issued | grep 'client_' | wc -l)
     local end=$(($existing_count + $1))
     for (( i=$existing_count+1; i<=$end; i++ )); do
         ./easyrsa gen-req client_$i nopass
         ./easyrsa sign-req client client_$i
+        # Assuming configuration files are created here, adjust if different
+        echo "client
+dev $DEV_TYPE
+proto $PROTOCOL
+remote your_server_ip $PORT
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+remote-cert-tls server
+verify-x509-name server name-prefix
+cipher AES-256-CBC
+auth SHA256
+compress lz4
+setenv opt block-outside-dns
+key-direction 1
+verb 3" > ~/client-files/client_$i.ovpn
     done
 }
 
@@ -70,8 +87,6 @@ sed -i "s/proto udp/proto $PROTOCOL/" /etc/openvpn/server.conf
 sed -i "s/dev tun/dev $DEV_TYPE/" /etc/openvpn/server.conf
 sed -i 's/;user nobody/user nobody/' /etc/openvpn/server.conf
 sed -i 's/;group nogroup/group nogroup/' /etc/openvpn/server.conf
-# Ensure client-to-client is commented out
-sed -i 's/^client-to-client/;client-to-client/' /etc/openvpn/server.conf
 
 # Step 6: Adjust Server Networking Configuration
 echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
@@ -84,4 +99,8 @@ iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
 systemctl start openvpn@server
 systemctl enable openvpn@server
 
-echo "OpenVPN installation and configuration complete. You may now configure client machines."
+# Step 7: Prepare Client Config Files in a Zip Archive
+mkdir -p ~/client-files
+zip -j ~/client-files/clients.zip ~/client-files/*.ovpn
+
+echo "OpenVPN installation and configuration complete. Client configurations are zipped in ~/client-files/clients.zip."
